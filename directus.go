@@ -155,17 +155,7 @@ func (dc *Client) FindItemId(item ICollectionItem, filter string) (int, error) {
 		return 0, nil
 	}
 
-	itemBytes, err := json.Marshal(items[0])
-	if err != nil {
-		return 0, err
-	}
-
-	var itemMap map[string]any
-	if err = json.Unmarshal(itemBytes, &itemMap); err != nil {
-		return 0, err
-	}
-
-	return itemMap["id"].(int), nil
+	return items[0].Id, nil
 }
 
 // Queries items from directus collection.
