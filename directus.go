@@ -145,7 +145,7 @@ func (dc *Client) FindItemId(item ICollectionItem, filter string) (int, error) {
 	body = body[8:]
 	body = body[:len(body)-1]
 
-	var items []ICollectionItem
+	var items []CollectionItem
 	err = json.Unmarshal(body, &items)
 	if err != nil {
 		return 0, err
