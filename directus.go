@@ -54,6 +54,10 @@ func (dc *Client) CreateItem(item ICollectionItem) (ICollectionItem, error) {
 	url := dc.url
 	url.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
 
+	queryParams := url.Query()
+	queryParams.Add("fields", item.GetCollectionFields())
+	url.RawQuery = queryParams.Encode()
+
 	dataBytes, err := json.Marshal(item)
 	if err != nil {
 		return nil, err
@@ -91,10 +95,6 @@ func (dc *Client) FindItem(item ICollectionItem, filter string) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	// err = item.SetFieldsFromCollectionItem(data)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	var items []any
 	err = json.Unmarshal(data, &items)
@@ -201,6 +201,8 @@ func (dc *Client) GetItem(item ICollectionItem) (any, error) {
 		queryParams.Add("fields", item.GetCollectionFields())
 	}
 
+	url.RawQuery = queryParams.Encode()
+
 	req, err := http.NewRequest("GET", url.String(), nil)
 	if err != nil {
 		return nil, err
@@ -255,6 +257,10 @@ func (dc *Client) UpdateItem(item ICollectionItem) (any, error) {
 	url := dc.url
 	url.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
 	item.SetId(0)
+
+	queryParams := url.Query()
+	queryParams.Add("fields", item.GetCollectionFields())
+	url.RawQuery = queryParams.Encode()
 
 	dataBytes, err := json.Marshal(item)
 	if err != nil {
