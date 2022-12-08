@@ -237,7 +237,7 @@ func (dc *Client) UpdateItem(item ICollectionItem) (any, error) {
 
 	// item.SetFieldsFromCollectionItem(body)
 
-	fmt.Println(string(body))
+	// fmt.Println(string(body))
 
 	err = json.Unmarshal(body, &item)
 
