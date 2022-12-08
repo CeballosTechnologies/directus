@@ -118,6 +118,56 @@ func (dc *Client) FindItem(item ICollectionItem, filter string) (any, error) {
 	return item, nil
 }
 
+func (dc *Client) FindItemId(item ICollectionItem, filter string) (int, error) {
+	url := dc.url
+
+	url.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+
+	queryParams := url.Query()
+	queryParams.Add("fields", "id")
+	if filter != "" {
+		queryParams.Add("filter", filter)
+	}
+
+	url.RawQuery = queryParams.Encode()
+
+	req, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	body, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return 0, err
+	}
+
+	// Remove data wrapper
+	body = body[8:]
+	body = body[:len(body)-1]
+
+	var items []ICollectionItem
+	err = json.Unmarshal(body, &items)
+	if err != nil {
+		return 0, err
+	}
+
+	if len(items) == 0 {
+		return 0, nil
+	}
+
+	itemBytes, err := json.Marshal(items[0])
+	if err != nil {
+		return 0, err
+	}
+
+	var itemMap map[string]any
+	if err = json.Unmarshal(itemBytes, &itemMap); err != nil {
+		return 0, err
+	}
+
+	return itemMap["id"].(int), nil
+}
+
 // Queries items from directus collection.
 func (dc *Client) FindItems(item ICollectionItem, filter string) ([]byte, error) {
 	url := dc.url
