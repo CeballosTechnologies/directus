@@ -90,7 +90,7 @@ func (dc *Client) CreateItem(item ICollectionItem) (ICollectionItem, error) {
 	return item, err
 }
 
-func (dc *Client) FindItem(item ICollectionItem, filter string) (any, error) {
+func (dc *Client) FindItem(item ICollectionItem, filter string) (ICollectionItem, error) {
 	data, err := dc.FindItems(item, filter)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (dc *Client) FindItems(item ICollectionItem, filter string) ([]byte, error)
 	return body, nil
 }
 
-func (dc *Client) GetItem(item ICollectionItem) (any, error) {
+func (dc *Client) GetItem(item ICollectionItem) (ICollectionItem, error) {
 	url := dc.url
 
 	url.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
@@ -253,7 +253,7 @@ func (dc *Client) GetPath(path string, queryParams url.Values) (response []byte,
 }
 
 // Updates an existing item in directus collection.
-func (dc *Client) UpdateItem(item ICollectionItem) (any, error) {
+func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
 	url := dc.url
 	url.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
 	item.SetId(0)
@@ -291,7 +291,7 @@ func (dc *Client) UpdateItem(item ICollectionItem) (any, error) {
 }
 
 // Upserts an existing item in directus collection.
-func (dc *Client) UpsertItem(item ICollectionItem) (any, error) {
+func (dc *Client) UpsertItem(item ICollectionItem) (ICollectionItem, error) {
 	if item.GetId() == 0 {
 		return dc.CreateItem(item)
 	} else {
