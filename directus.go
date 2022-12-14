@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -21,7 +22,6 @@ type ICollectionItem interface {
 	GetCollectionFields() string
 	GetCollectionName() string
 	GetId() int
-	// SetFieldsFromCollectionItem([]byte) error
 	SetId(int)
 }
 
@@ -31,7 +31,12 @@ type CollectionItem struct {
 	DateUpdated *time.Time `json:"date_updated,omitempty"`
 }
 
-// Returns a new initialized client interface for interacting with Directus API.
+type ISingletonItem interface {
+	GetCollectionFields() string
+	GetCollectionName() string
+}
+
+// NewClient returns a new initialized client interface for interacting with Directus API.
 //   - baseUrl: directus API location.
 //   - accessToken represents the directus user used for integrations.
 func NewClient(baseUrl string, accessToken string) (Client, error) {
@@ -49,21 +54,21 @@ func NewClient(baseUrl string, accessToken string) (Client, error) {
 	return *dc, nil
 }
 
-// Adds a new item to directus collection.
+// CreateItem adds a new item to directus collection.
 func (dc *Client) CreateItem(item ICollectionItem) (ICollectionItem, error) {
-	url := dc.url
-	url.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+	u := dc.url
+	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
 
-	queryParams := url.Query()
+	queryParams := u.Query()
 	queryParams.Add("fields", item.GetCollectionFields())
-	url.RawQuery = queryParams.Encode()
+	u.RawQuery = queryParams.Encode()
 
 	dataBytes, err := json.Marshal(item)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(dataBytes))
+	req, err := http.NewRequest("POST", u.String(), bytes.NewBuffer(dataBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -119,19 +124,19 @@ func (dc *Client) FindItem(item ICollectionItem, filter string) (ICollectionItem
 }
 
 func (dc *Client) FindItemId(item ICollectionItem, filter string) (int, error) {
-	url := dc.url
+	u := dc.url
 
-	url.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
 
-	queryParams := url.Query()
+	queryParams := u.Query()
 	queryParams.Add("fields", "id")
 	if filter != "" {
 		queryParams.Add("filter", filter)
 	}
 
-	url.RawQuery = queryParams.Encode()
+	u.RawQuery = queryParams.Encode()
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -158,13 +163,13 @@ func (dc *Client) FindItemId(item ICollectionItem, filter string) (int, error) {
 	return items[0].Id, nil
 }
 
-// Queries items from directus collection.
+// FindItems queries items from directus collection.
 func (dc *Client) FindItems(item ICollectionItem, filter string) ([]byte, error) {
-	url := dc.url
+	u := dc.url
 
-	url.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
 
-	queryParams := url.Query()
+	queryParams := u.Query()
 	if item.GetCollectionFields() != "" {
 		queryParams.Add("fields", item.GetCollectionFields())
 	}
@@ -172,9 +177,9 @@ func (dc *Client) FindItems(item ICollectionItem, filter string) ([]byte, error)
 		queryParams.Add("filter", filter)
 	}
 
-	url.RawQuery = queryParams.Encode()
+	u.RawQuery = queryParams.Encode()
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -192,18 +197,18 @@ func (dc *Client) FindItems(item ICollectionItem, filter string) ([]byte, error)
 }
 
 func (dc *Client) GetItem(item ICollectionItem) (ICollectionItem, error) {
-	url := dc.url
+	u := dc.url
 
-	url.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
+	u.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
 
-	queryParams := url.Query()
+	queryParams := u.Query()
 	if item.GetCollectionFields() != "" {
 		queryParams.Add("fields", item.GetCollectionFields())
 	}
 
-	url.RawQuery = queryParams.Encode()
+	u.RawQuery = queryParams.Encode()
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -224,16 +229,16 @@ func (dc *Client) GetItem(item ICollectionItem) (ICollectionItem, error) {
 	return item, err
 }
 
-// Get raw path with query parameters and returns raw response data
+// GetPath get raw path with query parameters and returns raw response data
 func (dc *Client) GetPath(path string, queryParams url.Values) (response []byte, err error) {
-	url := dc.url
-	url.Path = path
+	u := dc.url
+	u.Path = path
 
 	if queryParams != nil {
-		url.RawQuery = queryParams.Encode()
+		u.RawQuery = queryParams.Encode()
 	}
 
-	req, err := http.NewRequest("GET", url.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return
 	}
@@ -252,22 +257,54 @@ func (dc *Client) GetPath(path string, queryParams url.Values) (response []byte,
 	return
 }
 
-// Updates an existing item in directus collection.
+func (dc *Client) GetSingleton(item ISingletonItem) (ISingletonItem, error) {
+	u := dc.url
+
+	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+
+	queryParams := u.Query()
+	queryParams.Add("fields", "id")
+	u.RawQuery = queryParams.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove data wrapper
+	body = body[8:]
+	body = body[:len(body)-1]
+
+	singleton := item
+	err = json.Unmarshal(body, &singleton)
+	if err != nil {
+		return nil, err
+	}
+
+	return singleton, nil
+}
+
+// UpdateItem updates an existing item in directus collection.
 func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
-	url := dc.url
-	url.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
+	u := dc.url
+	u.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
 	item.SetId(0)
 
-	queryParams := url.Query()
+	queryParams := u.Query()
 	queryParams.Add("fields", item.GetCollectionFields())
-	url.RawQuery = queryParams.Encode()
+	u.RawQuery = queryParams.Encode()
 
 	dataBytes, err := json.Marshal(item)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("PATCH", url.String(), bytes.NewBuffer(dataBytes))
+	req, err := http.NewRequest("PATCH", u.String(), bytes.NewBuffer(dataBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -290,7 +327,7 @@ func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
 	return item, err
 }
 
-// Upserts an existing item in directus collection.
+// UpsertItem upserts an existing item in directus collection.
 func (dc *Client) UpsertItem(item ICollectionItem) (ICollectionItem, error) {
 	if item.GetId() == 0 {
 		return dc.CreateItem(item)
@@ -301,7 +338,7 @@ func (dc *Client) UpsertItem(item ICollectionItem) (ICollectionItem, error) {
 
 // Executes HTTP request with Directus API
 func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounter int) ([]byte, error) {
-	var data = []byte{}
+	var data []byte
 
 	if maxRetries == retryCounter {
 		return data, fmt.Errorf("directus api max attempts reached")
@@ -312,7 +349,7 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 
 	resp, err := dc.httpClient.Do(request)
 	if err != nil {
-		fmt.Println(("error sending request to directus API"))
+		fmt.Println("error sending request to directus API")
 		fmt.Println(err.Error())
 		return data, err
 	}
@@ -321,11 +358,13 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 		fmt.Printf("Directus response status: %d\n", resp.StatusCode)
 
 		if resp.StatusCode == 500 {
-			return dc.sendRequest(request, maxRetries, (retryCounter + 1))
+			return dc.sendRequest(request, maxRetries, retryCounter+1)
 		}
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
 
 	return ioutil.ReadAll(resp.Body)
 }
