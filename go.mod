@@ -1,3 +1,3 @@
-module github.com/CeballosTechnologies/directusclient
+module github.com/CeballosTechnologies/directus
 
 go 1.18
