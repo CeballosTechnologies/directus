@@ -359,6 +359,8 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 			return io.ReadAll(resp.Body)
 		}
 		//return dc.sendRequest(request, maxRetries, retryCounter+1)
+	} else if resp.StatusCode != 200 {
+		return io.ReadAll(resp.Body)
 	}
 
 	defer func(Body io.ReadCloser) {
