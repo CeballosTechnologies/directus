@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -263,7 +262,7 @@ func (dc *Client) GetSingleton(item ISingletonItem) (ISingletonItem, error) {
 	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
 
 	queryParams := u.Query()
-	queryParams.Add("fields", "id")
+	queryParams.Add("fields", item.GetCollectionFields())
 	u.RawQuery = queryParams.Encode()
 
 	req, err := http.NewRequest("GET", u.String(), nil)
@@ -366,5 +365,5 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 		_ = Body.Close()
 	}(resp.Body)
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
