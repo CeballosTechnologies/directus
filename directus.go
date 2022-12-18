@@ -350,7 +350,7 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 	}
 
 	if resp.StatusCode == 500 {
-		if maxRetries <= retryCounter {
+		if retryCounter <= maxRetries {
 			retryResponse, err := dc.sendRequest(request, maxRetries, retryCounter+1)
 			if err != nil {
 				return nil, err
