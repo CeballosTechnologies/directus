@@ -339,10 +339,6 @@ func (dc *Client) UpsertItem(item ICollectionItem) (ICollectionItem, error) {
 func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounter int) ([]byte, error) {
 	var data []byte
 
-	if maxRetries == retryCounter {
-		return data, fmt.Errorf("directus api max attempts reached")
-	}
-
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", dc.accessToken))
 	request.Header.Set("Content-Type", "application/json")
 
@@ -354,13 +350,22 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 	}
 
 	if resp.StatusCode == 500 {
-		_, err := dc.sendRequest(request, maxRetries, retryCounter+1)
-		if err != nil {
-			return io.ReadAll(resp.Body)
+		if maxRetries <= retryCounter {
+			retryResponse, err := dc.sendRequest(request, maxRetries, retryCounter+1)
+			if err != nil {
+				return nil, err
+			}
+			return retryResponse, nil
+		} else {
+			return nil, fmt.Errorf("internal server error: directus api max attempts reached")
 		}
 		//return dc.sendRequest(request, maxRetries, retryCounter+1)
-	} else if resp.StatusCode != 200 {
-		return io.ReadAll(resp.Body)
+	} else if resp.StatusCode >= 300 {
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf(string(data))
 	}
 
 	defer func(Body io.ReadCloser) {
