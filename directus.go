@@ -353,12 +353,12 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 		return data, err
 	}
 
-	if resp.StatusCode != 200 {
-		fmt.Printf("Directus response status: %d\n", resp.StatusCode)
-
-		if resp.StatusCode == 500 {
-			return dc.sendRequest(request, maxRetries, retryCounter+1)
+	if resp.StatusCode == 500 {
+		_, err := dc.sendRequest(request, maxRetries, retryCounter+1)
+		if err != nil {
+			return io.ReadAll(resp.Body)
 		}
+		//return dc.sendRequest(request, maxRetries, retryCounter+1)
 	}
 
 	defer func(Body io.ReadCloser) {
