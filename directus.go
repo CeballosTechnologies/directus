@@ -25,7 +25,6 @@ type ICollectionItem interface {
 	GetCollectionFields() string
 	GetCollectionName() string
 	GetId() int
-	GetIdObject() IdObject
 	SetId(int)
 }
 
