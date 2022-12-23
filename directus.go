@@ -25,6 +25,7 @@ type ICollectionItem interface {
 	GetCollectionFields() string
 	GetCollectionName() string
 	GetId() int
+	MarshalJSON() ([]byte, error)
 	SetId(int)
 }
 
