@@ -380,8 +380,8 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 	return io.ReadAll(resp.Body)
 }
 
-func SerializeItem(item ICollectionItem) ([]byte, error) {
+func SerializeItem(item any) ([]byte, error) {
 	type Alias any
-	a := Alias(item)
+	a := (*Alias)(&item)
 	return json.Marshal(a)
 }
