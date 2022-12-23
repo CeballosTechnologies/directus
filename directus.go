@@ -297,7 +297,7 @@ func (dc *Client) GetSingleton(item ISingletonItem) (ISingletonItem, error) {
 func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
 	u := dc.url
 	u.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), item.GetId())
-	item.SetId(0)
+	// item.SetId(0)
 
 	queryParams := u.Query()
 	queryParams.Add("fields", item.GetCollectionFields())
