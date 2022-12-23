@@ -381,7 +381,5 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 }
 
 func SerializeItem(item ICollectionItem) ([]byte, error) {
-	type Alias any
-	var i Alias = item
-	return json.Marshal(i)
+	return json.Marshal(any(item))
 }
