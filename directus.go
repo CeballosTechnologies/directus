@@ -67,7 +67,7 @@ func (dc *Client) CreateItem(item ICollectionItem) (ICollectionItem, error) {
 	queryParams.Add("fields", item.GetCollectionFields())
 	u.RawQuery = queryParams.Encode()
 
-	dataBytes, err := json.Marshal(item)
+	dataBytes, err := SerializeItem(item) // json.Marshal(item)
 	if err != nil {
 		return nil, err
 	}
@@ -303,7 +303,7 @@ func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
 	queryParams.Add("fields", item.GetCollectionFields())
 	u.RawQuery = queryParams.Encode()
 
-	dataBytes, err := json.Marshal(item)
+	dataBytes, err := SerializeItem(item) // json.Marshal(item)
 	if err != nil {
 		return nil, err
 	}
@@ -378,4 +378,10 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 	}(resp.Body)
 
 	return io.ReadAll(resp.Body)
+}
+
+func SerializeItem(item ICollectionItem) ([]byte, error) {
+	type Alias any
+	var i Alias = item
+	return json.Marshal(i)
 }
