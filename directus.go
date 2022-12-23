@@ -17,10 +17,15 @@ type Client struct {
 	url         url.URL
 }
 
+type IdObject struct {
+	Id int `json:"id"`
+}
+
 type ICollectionItem interface {
 	GetCollectionFields() string
 	GetCollectionName() string
 	GetId() int
+	GetIdObject() IdObject
 	SetId(int)
 }
 
