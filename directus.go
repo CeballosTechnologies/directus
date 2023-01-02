@@ -340,7 +340,7 @@ func (dc *Client) UpdateSingleton(item ISingletonItem) (ISingletonItem, error) {
 	queryParams.Add("fields", item.GetCollectionFields())
 	u.RawQuery = queryParams.Encode()
 
-	dataBytes, err := SerializeItem(item) // json.Marshal(item)
+	dataBytes, err := json.Marshal(item)
 	if err != nil {
 		return nil, err
 	}
