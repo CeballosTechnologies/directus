@@ -331,6 +331,43 @@ func (dc *Client) UpdateItem(item ICollectionItem) (ICollectionItem, error) {
 	return item, err
 }
 
+// UpdateSingleton updates an existing singleton in directus collection.
+func (dc *Client) UpdateSingleton(item ISingletonItem) (ISingletonItem, error) {
+	u := dc.url
+	u.Path = fmt.Sprintf("/items/%s", item.GetCollectionName())
+
+	queryParams := u.Query()
+	queryParams.Add("fields", item.GetCollectionFields())
+	u.RawQuery = queryParams.Encode()
+
+	dataBytes, err := SerializeItem(item) // json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", u.String(), bytes.NewBuffer(dataBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Remove data wrapper
+	body = body[8:]
+	body = body[:len(body)-1]
+
+	// item.SetFieldsFromCollectionItem(body)
+
+	// fmt.Println(string(body))
+
+	err = json.Unmarshal(body, &item)
+
+	return item, err
+}
+
 // UpsertItem upserts an existing item in directus collection.
 func (dc *Client) UpsertItem(item ICollectionItem) (ICollectionItem, error) {
 	if item.GetId() == 0 {
