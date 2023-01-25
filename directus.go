@@ -422,3 +422,47 @@ func SerializeItem(item any) ([]byte, error) {
 	a := (*Alias)(&item)
 	return json.Marshal(a)
 }
+
+func (dc *Client) GetCurrentUser(token string) (User, error) {
+	var user User
+
+	u := dc.url
+	u.Path = "/users/me"
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return user, err
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	resp, err := dc.httpClient.Do(req)
+	if err != nil {
+		fmt.Println("error sending request to directus API")
+		fmt.Println(err.Error())
+		return user, err
+	}
+
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(resp.Body)
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return user, err
+	}
+
+	if resp.StatusCode >= 300 {
+		return user, fmt.Errorf(string(data))
+	}
+
+	// Remove data wrapper
+	data = data[8:]
+	data = data[:len(data)-1]
+
+	err = json.Unmarshal(data, &user)
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
