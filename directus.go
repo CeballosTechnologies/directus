@@ -466,3 +466,29 @@ func (dc *Client) GetCurrentUser(token string) (User, error) {
 
 	return user, nil
 }
+
+func (dc *Client) GetRole(roleId string) (Role, error) {
+	var role Role
+
+	u := dc.url
+
+	u.Path = fmt.Sprintf("/roles/%s", roleId)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return role, err
+	}
+
+	body, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return role, err
+	}
+
+	// Remove data wrapper
+	body = body[8:]
+	body = body[:len(body)-1]
+
+	err = json.Unmarshal(body, &role)
+
+	return role, err
+}
