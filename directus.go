@@ -10,6 +10,24 @@ import (
 	"time"
 )
 
+type Date time.Time
+
+func (d *Date) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(*d).Format("2006-02-01"))
+}
+
+func (d *Date) UnmarshalJSON(data []byte) error {
+	data = data[1:]
+	data = data[:len(data)-1]
+
+	t, err := time.Parse("2006-02-01", string(data))
+	if err != nil {
+		return err
+	}
+	*d = Date(t)
+	return nil
+}
+
 // Client interface for interacting with Client API
 type Client struct {
 	accessToken string
