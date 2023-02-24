@@ -13,14 +13,14 @@ import (
 type Date time.Time
 
 func (d *Date) MarshalJSON() ([]byte, error) {
-	return json.Marshal(time.Time(*d).Format("2006-02-01"))
+	return json.Marshal(time.Time(*d).Format("2006-01-02"))
 }
 
 func (d *Date) UnmarshalJSON(data []byte) error {
 	data = data[1:]
 	data = data[:len(data)-1]
 
-	t, err := time.Parse("2006-02-01", string(data))
+	t, err := time.Parse("2006-01-02", string(data))
 	if err != nil {
 		return err
 	}
