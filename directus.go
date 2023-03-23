@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"time"
 )
@@ -400,7 +402,10 @@ func (dc *Client) sendRequest(request *http.Request, maxRetries int, retryCounte
 	var data []byte
 
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", dc.accessToken))
-	request.Header.Set("Content-Type", "application/json")
+
+	if request.Header.Get("Content-Type") == "" {
+		request.Header.Set("Content-Type", "application/json")
+	}
 
 	resp, err := dc.httpClient.Do(request)
 	if err != nil {
@@ -509,4 +514,61 @@ func (dc *Client) GetRole(roleId string) (Role, error) {
 	err = json.Unmarshal(body, &role)
 
 	return role, err
+}
+
+func (dc *Client) UploadFile(title string, filename string, data io.Reader) (File, error) {
+	var file File
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+
+	titleHeader := textproto.MIMEHeader{}
+	titleHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="title"`))
+	titlePart, err := writer.CreatePart(titleHeader)
+	if err != nil {
+		return file, err
+	}
+	_, err = titlePart.Write([]byte(title))
+
+	fileHeader := textproto.MIMEHeader{}
+	fileHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, filename))
+	fileHeader.Set("Content-Type", "application/pdf")
+	headPart, err := writer.CreatePart(fileHeader)
+	if err != nil {
+		return file, err
+	}
+	_, err = io.Copy(headPart, data)
+	if err != nil {
+		return file, err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return file, err
+	}
+
+	u := dc.url
+	u.Path = "/files"
+
+	req, err := http.NewRequest("POST", u.String(), body)
+	if err != nil {
+		return file, err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	responseBody, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return file, err
+	}
+
+	// Remove data wrapper
+	responseBody = responseBody[8:]
+	responseBody = responseBody[:len(responseBody)-1]
+
+	err = json.Unmarshal(responseBody, &file)
+	if err != nil {
+		return File{}, err
+	}
+
+	return file, nil
 }
