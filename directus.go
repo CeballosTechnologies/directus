@@ -516,19 +516,35 @@ func (dc *Client) GetRole(roleId string) (Role, error) {
 	return role, err
 }
 
-func (dc *Client) UploadFile(title string, filename string, data io.Reader) (File, error) {
+func (dc *Client) UploadFile(folder string, title string, filename string, data io.Reader) (File, error) {
 	var file File
 
 	body := new(bytes.Buffer)
 	writer := multipart.NewWriter(body)
 
+	if folder != "" {
+		folderHeader := textproto.MIMEHeader{}
+		folderHeader.Set("Content-Disposition", `form-data; name="folder"`)
+		folderPart, err := writer.CreatePart(folderHeader)
+		if err != nil {
+			return file, err
+		}
+		_, err = folderPart.Write([]byte(folder))
+		if err != nil {
+			return file, err
+		}
+	}
+
 	titleHeader := textproto.MIMEHeader{}
-	titleHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="title"`))
+	titleHeader.Set("Content-Disposition", `form-data; name="title"`)
 	titlePart, err := writer.CreatePart(titleHeader)
 	if err != nil {
 		return file, err
 	}
 	_, err = titlePart.Write([]byte(title))
+	if err != nil {
+		return file, err
+	}
 
 	fileHeader := textproto.MIMEHeader{}
 	fileHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="file"; filename="%s"`, filename))
