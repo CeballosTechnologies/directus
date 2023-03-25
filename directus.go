@@ -30,6 +30,24 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type DateTime time.Time
+
+func (d *DateTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(*d).Format("2006-01-02T15:04:05"))
+}
+
+func (d *DateTime) UnmarshalJSON(data []byte) error {
+	data = data[1:]
+	data = data[:len(data)-1]
+
+	t, err := time.Parse("2006-01-02T15:04:05", string(data))
+	if err != nil {
+		return err
+	}
+	*d = DateTime(t)
+	return nil
+}
+
 // Client interface for interacting with Client API
 type Client struct {
 	accessToken string
@@ -76,6 +94,41 @@ func NewClient(baseUrl string, accessToken string) (Client, error) {
 	dc.url = *u
 
 	return *dc, nil
+}
+
+func GetItem[T ICollectionItem](dc Client, id int) (T, error) {
+	item := *(new(T))
+
+	u := dc.url
+
+	u.Path = fmt.Sprintf("/items/%s/%d", item.GetCollectionName(), id)
+
+	queryParams := u.Query()
+	if item.GetCollectionFields() != "" {
+		queryParams.Add("fields", item.GetCollectionFields())
+	}
+
+	u.RawQuery = queryParams.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return item, err
+	}
+
+	body, err := dc.sendRequest(req, 5, 0)
+	if err != nil {
+		return item, err
+	}
+
+	// Remove data wrapper
+	body = body[8:]
+	body = body[:len(body)-1]
+
+	// item.SetFieldsFromCollectionItem(body)
+
+	err = json.Unmarshal(body, &item)
+
+	return item, err
 }
 
 // CreateItem adds a new item to directus collection.
