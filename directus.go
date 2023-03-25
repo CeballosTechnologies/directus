@@ -96,7 +96,9 @@ func NewClient(baseUrl string, accessToken string) (Client, error) {
 	return *dc, nil
 }
 
-func GetItem[T ICollectionItem](dc Client, id int) (T, error) {
+func GetItem[T ICollectionItem](config Config, id int) (T, error) {
+	dc, err := NewClient(config.BaseUrl, config.ApiKey)
+
 	item := *(new(T))
 
 	u := dc.url
