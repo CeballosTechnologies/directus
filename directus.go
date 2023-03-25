@@ -78,25 +78,21 @@ type ISingletonItem interface {
 	GetCollectionName() string
 }
 
-// NewClient returns a new initialized client interface for interacting with Directus API.
-//   - baseUrl: directus API location.
-//   - accessToken represents the directus user used for integrations.
-func NewClient(baseUrl string, accessToken string) (Client, error) {
-	dc := new(Client)
-
-	u, err := url.Parse(baseUrl)
+func CreateItem(config Config, item ICollectionItem) (int, error) {
+	dc, err := NewClient(config.BaseUrl, config.ApiKey)
 	if err != nil {
-		return *dc, err
+		return 0, err
 	}
 
-	dc.accessToken = accessToken
-	dc.httpClient = http.Client{}
-	dc.url = *u
+	resp, err := dc.CreateItem(item)
+	if err != nil {
+		return 0, err
+	}
 
-	return *dc, nil
+	return resp.GetId(), nil
 }
 
-func GetItem[T ICollectionItem](config Config, id int) (T, error) {
+func RetrieveItem[T ICollectionItem](config Config, id int) (T, error) {
 	dc, err := NewClient(config.BaseUrl, config.ApiKey)
 
 	item := *(new(T))
@@ -131,6 +127,44 @@ func GetItem[T ICollectionItem](config Config, id int) (T, error) {
 	err = json.Unmarshal(body, &item)
 
 	return item, err
+}
+
+func UpdateItem(config Config, item ICollectionItem) error {
+	dc, err := NewClient(config.BaseUrl, config.ApiKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = dc.UpdateItem(item)
+	return err
+}
+
+func UpsertItem(config Config, item ICollectionItem) error {
+	dc, err := NewClient(config.BaseUrl, config.ApiKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = dc.UpsertItem(item)
+	return err
+}
+
+// NewClient returns a new initialized client interface for interacting with Directus API.
+//   - baseUrl: directus API location.
+//   - accessToken represents the directus user used for integrations.
+func NewClient(baseUrl string, accessToken string) (Client, error) {
+	dc := new(Client)
+
+	u, err := url.Parse(baseUrl)
+	if err != nil {
+		return *dc, err
+	}
+
+	dc.accessToken = accessToken
+	dc.httpClient = http.Client{}
+	dc.url = *u
+
+	return *dc, nil
 }
 
 // CreateItem adds a new item to directus collection.
